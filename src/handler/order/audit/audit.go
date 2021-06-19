@@ -5,9 +5,10 @@ import (
 	"Yearning-go/src/lib"
 	"Yearning-go/src/model"
 	pb "Yearning-go/src/proto"
-	"github.com/cookieY/yee"
 	"net/http"
 	"time"
+
+	"github.com/cookieY/yee"
 )
 
 func SuperSQLTest(c yee.Context) (err error) {
@@ -117,7 +118,12 @@ func FetchAuditOrder(c yee.Context) (err error) {
 		c.Logger().Error(err.Error())
 		return
 	}
-	user, _ := lib.JwtParse(c)
+
+	user, role := lib.JwtParse(c)
+	if role == "super" {
+		user = "%"
+	}
+
 	var pg int
 	var order []model.CoreSqlOrder
 	start, end := lib.Paging(u.Page, 15)
@@ -127,6 +133,7 @@ func FetchAuditOrder(c yee.Context) (err error) {
 			commom.AccordingToRelevant(user),
 			commom.AccordingToText(u.Find.Text),
 			commom.AccordingToDatetime(u.Find.Picker),
+			commom.AccordingToWorkId(u.Find.WorkId),
 		).Count(&pg).Order("id desc").Offset(start).Limit(end).Find(&order)
 	return c.JSON(http.StatusOK, commom.SuccessPayload(commom.CommonList{Page: pg, Data: order}))
 }
